@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install linters
+        run: pip install black flake8
+      - name: black check
+        run: black --check ingestion/ tests/
+      - name: flake8
+        run: flake8 ingestion/ tests/ --max-line-length=100
+
+  lint-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+      - name: sqlfluff lint
+        run: sqlfluff lint dbt_project/models/ dbt_project/snapshots/ dbt_project/tests/ --dialect snowflake
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-mock
+      - name: Run pytest
+        run: pytest tests/ -v
+
+  dbt-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dbt
+        run: pip install dbt-snowflake
+      - name: dbt compile
+        run: |
+          cd dbt_project
+          dbt compile --profiles-dir /tmp --profile healthcare_claims --target dev
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}

@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-dbt-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dbt
+        run: pip install dbt-snowflake
+      - name: Create profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          echo "healthcare_claims:" > ~/.dbt/profiles.yml
+          echo "  target: dev" >> ~/.dbt/profiles.yml
+          echo "  outputs:" >> ~/.dbt/profiles.yml
+          echo "    dev:" >> ~/.dbt/profiles.yml
+          echo "      type: snowflake" >> ~/.dbt/profiles.yml
+          echo "      account: ${{ secrets.SNOWFLAKE_ACCOUNT }}" >> ~/.dbt/profiles.yml
+          echo "      user: ${{ secrets.SNOWFLAKE_USER }}" >> ~/.dbt/profiles.yml
+          echo "      password: ${{ secrets.SNOWFLAKE_PASSWORD }}" >> ~/.dbt/profiles.yml
+          echo "      role: TRANSFORMER" >> ~/.dbt/profiles.yml
+          echo "      database: HEALTHCARE_DB_DEV" >> ~/.dbt/profiles.yml
+          echo "      warehouse: CLAIMS_WH_DEV" >> ~/.dbt/profiles.yml
+          echo "      schema: STAGING" >> ~/.dbt/profiles.yml
+          echo "      threads: 4" >> ~/.dbt/profiles.yml
+      - name: dbt run
+        run: cd dbt_project && dbt run
+      - name: dbt test
+        run: cd dbt_project && dbt test
+      - name: dbt snapshot
+        run: cd dbt_project && dbt snapshot
+
+  deploy-dbt-prod:
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: deploy-dbt-dev
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dbt
+        run: pip install dbt-snowflake
+      - name: Create profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          echo "healthcare_claims:" > ~/.dbt/profiles.yml
+          echo "  target: prod" >> ~/.dbt/profiles.yml
+          echo "  outputs:" >> ~/.dbt/profiles.yml
+          echo "    prod:" >> ~/.dbt/profiles.yml
+          echo "      type: snowflake" >> ~/.dbt/profiles.yml
+          echo "      account: ${{ secrets.SNOWFLAKE_ACCOUNT }}" >> ~/.dbt/profiles.yml
+          echo "      user: ${{ secrets.SNOWFLAKE_USER }}" >> ~/.dbt/profiles.yml
+          echo "      password: ${{ secrets.SNOWFLAKE_PASSWORD }}" >> ~/.dbt/profiles.yml
+          echo "      role: TRANSFORMER" >> ~/.dbt/profiles.yml
+          echo "      database: HEALTHCARE_DB_PROD" >> ~/.dbt/profiles.yml
+          echo "      warehouse: CLAIMS_WH_PROD" >> ~/.dbt/profiles.yml
+          echo "      schema: STAGING" >> ~/.dbt/profiles.yml
+          echo "      threads: 4" >> ~/.dbt/profiles.yml
+      - name: dbt run
+        run: cd dbt_project && dbt run
+      - name: dbt test
+        run: cd dbt_project && dbt test
+      - name: dbt snapshot
+        run: cd dbt_project && dbt snapshot

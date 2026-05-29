@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: cms
+    database: HEALTHCARE_DB
+    schema: RAW
+    tables:
+      - name: cms_claims
+        description: Raw CMS Medicare Provider Utilization data loaded via ADF
+      - name: cms_providers
+        description: Provider reference data (NPI, name, specialty, address)
+      - name: cms_procedures
+        description: HCPCS procedure code reference table

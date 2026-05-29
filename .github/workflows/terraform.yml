@@ -1,0 +1,59 @@
+name: Terraform
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+
+env:
+  TF_WORKING_DIR: infra/terraform
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      - name: Terraform Init
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
+      - name: Terraform Validate
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
+      - name: Terraform Plan
+        run: |
+          terraform -chdir=${{ env.TF_WORKING_DIR }} plan \
+            -var="environment=dev" \
+            -var="snowflake_account=${{ secrets.SNOWFLAKE_ACCOUNT }}" \
+            -var="snowflake_user=${{ secrets.SNOWFLAKE_USER }}" \
+            -var="snowflake_password=${{ secrets.SNOWFLAKE_PASSWORD }}" \
+            -var="alert_email=${{ secrets.ALERT_EMAIL }}"
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      - name: Terraform Init
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
+      - name: Terraform Apply
+        run: |
+          terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve \
+            -var="environment=dev" \
+            -var="snowflake_account=${{ secrets.SNOWFLAKE_ACCOUNT }}" \
+            -var="snowflake_user=${{ secrets.SNOWFLAKE_USER }}" \
+            -var="snowflake_password=${{ secrets.SNOWFLAKE_PASSWORD }}" \
+            -var="alert_email=${{ secrets.ALERT_EMAIL }}"

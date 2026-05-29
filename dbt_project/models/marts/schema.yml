@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: fct_claims
+    description: "One row per claim with payment metrics and anomaly flags"
+    columns:
+      - name: claim_id
+        description: "Unique claim identifier"
+        data_tests:
+          - unique
+          - not_null
+      - name: provider_npi
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_provider')
+                field: provider_npi
+      - name: procedure_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_procedure')
+                field: procedure_code
+      - name: payment_amount
+        data_tests:
+          - not_null
+      - name: is_payment_anomaly
+        data_tests:
+          - not_null
+
+  - name: dim_provider
+    description: "One row per provider NPI with billing stats"
+    columns:
+      - name: provider_npi
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_procedure
+    description: "One row per HCPCS procedure code"
+    columns:
+      - name: procedure_code
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_region
+    description: "One row per state with aggregated claims metrics"
+    columns:
+      - name: provider_state
+        data_tests:
+          - unique
+          - not_null

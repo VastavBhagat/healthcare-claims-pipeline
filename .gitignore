@@ -1,0 +1,38 @@
+# environment
+.env
+*.env.local
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# airflow
+airflow/logs/
+airflow/plugins/__pycache__/
+
+# terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/*.tfvars
+infra/terraform/.terraform.lock.hcl
+
+# data
+data/
+*.jsonl
+*.csv
+
+# misc
+.DS_Store
+*.log

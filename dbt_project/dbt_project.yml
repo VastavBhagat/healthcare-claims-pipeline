@@ -1,0 +1,33 @@
+name: healthcare_claims
+version: '1.0.0'
+config-version: 2
+
+profile: healthcare_claims
+
+model-paths: ["models"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  healthcare_claims:
+    staging:
+      +schema: STAGING
+      +materialized: view
+    intermediate:
+      +schema: INTERMEDIATE
+      +materialized: table
+    marts:
+      +schema: MARTS
+      +materialized: table
+
+snapshots:
+  healthcare_claims:
+    +target_schema: SNAPSHOTS
+    +strategy: timestamp
+    +updated_at: updated_at
