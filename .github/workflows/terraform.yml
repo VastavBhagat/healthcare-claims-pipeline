@@ -57,3 +57,4 @@ jobs:
             -var="snowflake_user=${{ secrets.SNOWFLAKE_USER }}" \
             -var="snowflake_password=${{ secrets.SNOWFLAKE_PASSWORD }}" \
             -var="alert_email=${{ secrets.ALERT_EMAIL }}"
+

@@ -36,3 +36,4 @@ data/
 # misc
 .DS_Store
 *.log
+terraform.zip
