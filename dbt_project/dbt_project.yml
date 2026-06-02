@@ -21,7 +21,7 @@ models:
       +materialized: view
     intermediate:
       +schema: INTERMEDIATE
-      +materialized: table
+      +materialized: view
     marts:
       +schema: MARTS
       +materialized: table

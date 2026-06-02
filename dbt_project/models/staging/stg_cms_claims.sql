@@ -1,28 +1,34 @@
 with source as (
-    select * from {{ source('cms', 'cms_claims') }}
+    select * from {{ source('cms_raw', 'RAW_CLAIMS') }}
 ),
 
 cleaned as (
     select
-        claim_id,
-        npi                                         as provider_npi,
-        hcpcs_code                                  as procedure_code,
-        lower(place_of_service)                     as place_of_service,
-        lower(type_of_service)                      as type_of_service,
-        upper(nppes_provider_state)                 as provider_state,
-        service_date::date                          as service_date,
-        submitted_charge_amount::float              as submitted_amount,
-        medicare_allowed_amount::float              as allowed_amount,
-        medicare_payment_amount::float              as payment_amount,
-        line_srvc_cnt::int                          as service_count,
-        bene_unique_cnt::int                        as beneficiary_count,
-        -- row-level audit columns
+        rndrng_npi                          as provider_npi,
+        rndrng_prvdr_last_org               as provider_name,
+        rndrng_prvdr_first                  as provider_first_name,
+        rndrng_prvdr_type                   as provider_type,
+        upper(trim(rndrng_prvdr_state_cd))  as state_code,
+        hcpcs_cd                            as procedure_code,
+        hcpcs_desc                          as procedure_description,
+        tot_benes                           as total_beneficiaries,
+        tot_srvcs                           as total_services,
+        avg_sbmtd_chrg                      as avg_submitted_charge,
+        avg_mdcr_alowd_amt                  as avg_allowed_amount,
+        avg_mdcr_pymt_amt                   as avg_payment_amount,
+
+        -- derived columns
+        round(avg_mdcr_pymt_amt / nullif(avg_submitted_charge, 0) * 100, 2)
+                                            as payment_to_charge_ratio,
+
+        -- metadata
         _loaded_at,
         _source_file,
         _pipeline_run_id
+
     from source
-    where claim_id is not null
-      and npi is not null
+    where provider_npi is not null
+      and avg_mdcr_pymt_amt is not null
 )
 
 select * from cleaned

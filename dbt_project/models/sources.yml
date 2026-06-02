@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: cms_raw
+    database: HEALTHCARE_RAW
+    schema: CMS
+    description: "Raw CMS Medicare data landed from Azure Blob Storage"
+    tables:
+      - name: RAW_CLAIMS
+        description: "Medicare provider utilisation and payment data"
+        columns:
+          - name: rndrng_npi
+            description: "Provider NPI identifier"
+          - name: rndrng_prvdr_last_org
+            description: "Provider last name or organisation"
+          - name: rndrng_prvdr_state_cd
+            description: "State code where provider is located"
+          - name: hcpcs_cd
+            description: "Procedure code"
+          - name: avg_mdcr_pymt_amt
+            description: "Average Medicare payment amount"
