@@ -1,15 +1,15 @@
-with source as (
-    select * from {{ source('cms', 'cms_procedures') }}
+with claims as (
+    select * from {{ ref('stg_cms_claims') }}
 ),
 
-cleaned as (
-    select
-        hcpcs_code                                  as procedure_code,
-        initcap(hcpcs_description)                  as procedure_description,
-        lower(hcpcs_drug_indicator)                 as drug_indicator,
-        lower(hcpcs_category)                       as procedure_category
-    from source
-    where hcpcs_code is not null
+procedures as (
+    select distinct
+        procedure_code,
+        procedure_description,
+        'N'                         as drug_indicator,
+        type_of_service             as procedure_category
+    from claims
+    where procedure_code is not null
 )
 
-select * from cleaned
+select * from procedures
