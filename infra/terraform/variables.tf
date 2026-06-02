@@ -1,37 +1,19 @@
+variable "resource_group_name" {
+  default = "rg-healthcare-pipeline"
+}
+
 variable "location" {
-  description = "Azure region"
-  type        = string
-  default     = "australiaeast"
+  default = "australiaeast"
+}
+
+variable "storage_account_name" {
+  description = "Must be globally unique, lowercase, 3-24 chars, no hyphens"
+}
+
+variable "adf_name" {
+  default = "adf-healthcare-vastav"
 }
 
 variable "environment" {
-  description = "Deployment environment (dev or prod)"
-  type        = string
-  validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "environment must be dev or prod"
-  }
-}
-
-variable "snowflake_account" {
-  description = "Snowflake account identifier"
-  type        = string
-  sensitive   = true
-}
-
-variable "snowflake_user" {
-  description = "Snowflake admin username"
-  type        = string
-  sensitive   = true
-}
-
-variable "snowflake_password" {
-  description = "Snowflake admin password"
-  type        = string
-  sensitive   = true
-}
-
-variable "alert_email" {
-  description = "Email address for ADF failure alerts"
-  type        = string
+  default = "dev"
 }
