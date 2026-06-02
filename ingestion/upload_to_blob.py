@@ -1,66 +1,44 @@
-"""
-Uploads a local file to Azure Blob Storage.
-Supports routing to raw/, staging/, or archive/ zones.
-"""
-
 import os
 from pathlib import Path
-
+from datetime import datetime, timezone
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
-
 from utils import get_logger
 
-load_dotenv()
-
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 logger = get_logger(__name__)
 
-ZONES = {"raw", "staging", "archive"}
+ACCOUNT_NAME   = os.getenv("AZURE_STORAGE_ACCOUNT")
+ACCOUNT_KEY    = os.getenv("AZURE_STORAGE_KEY")
+CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME", "raw")
 
 
-def get_blob_client() -> BlobServiceClient:
-    conn_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-    if not conn_str:
-        raise EnvironmentError("AZURE_STORAGE_CONNECTION_STRING is not set")
-    return BlobServiceClient.from_connection_string(conn_str)
+def upload_file_to_blob(local_path: Path, blob_folder: str = "cms") -> str:
+    conn_str = (
+        f"DefaultEndpointsProtocol=https;"
+        f"AccountName={ACCOUNT_NAME};"
+        f"AccountKey={ACCOUNT_KEY};"
+        f"EndpointSuffix=core.windows.net"
+    )
 
+    client         = BlobServiceClient.from_connection_string(conn_str)
+    container      = client.get_container_client(CONTAINER_NAME)
+    date_partition = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    blob_path      = f"{blob_folder}/{date_partition}/{local_path.name}"
 
-def upload_file(file_path: str, zone: str, blob_name: str = None) -> str:
-    if zone not in ZONES:
-        raise ValueError(f"zone must be one of {ZONES}, got '{zone}'")
+    logger.info(f"Uploading → blob://{CONTAINER_NAME}/{blob_path}")
+    with open(local_path, "rb") as data:
+        container.upload_blob(name=blob_path, data=data, overwrite=True)
 
-    container = os.getenv(f"AZURE_CONTAINER_{zone.upper()}", zone)
-    blob_name = blob_name or Path(file_path).name
-
-    client = get_blob_client()
-    blob_client = client.get_blob_client(container=container, blob=blob_name)
-
-    with open(file_path, "rb") as data:
-        blob_client.upload_blob(data, overwrite=True)
-
-    url = blob_client.url
-    logger.info(f"Uploaded {file_path} -> {container}/{blob_name}")
-    return url
-
-
-def move_to_archive(blob_name: str) -> None:
-    """Copy a blob from raw to archive then delete the raw copy."""
-    client = get_blob_client()
-    raw_container = os.getenv("AZURE_CONTAINER_RAW", "raw")
-    archive_container = os.getenv("AZURE_CONTAINER_ARCHIVE", "archive")
-
-    source = client.get_blob_client(container=raw_container, blob=blob_name)
-    dest = client.get_blob_client(container=archive_container, blob=blob_name)
-
-    dest.start_copy_from_url(source.url)
-    source.delete_blob()
-
-    logger.info(f"Archived {blob_name} from {raw_container} to {archive_container}")
+    logger.info("✅ Upload complete")
+    return blob_path
 
 
 if __name__ == "__main__":
-    import sys
-    file_path = sys.argv[1]
-    zone = sys.argv[2] if len(sys.argv) > 2 else "raw"
-    url = upload_file(file_path, zone)
-    print(f"Uploaded to: {url}")
+    local_file = Path("data/raw/cms_medicare_raw.csv")
+
+    if not local_file.exists():
+        raise FileNotFoundError("Run download_cms.py first")
+
+    blob_path = upload_file_to_blob(local_file)
+    print(f"File available at: blob://{CONTAINER_NAME}/{blob_path}")
